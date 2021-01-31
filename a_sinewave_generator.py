@@ -49,7 +49,7 @@ class sinewave_generator:
 		#print(self.back_weight.shape,np.array([current_state]).shape)
 		next_state += self.back_weight @ current_state
 		#print(self.log_reservoir_nodes[-1],current_state)
-		next_state = self.activator(next_state)*0.1
+		next_state = self.activator(next_state)
 		return next_state
 
 	#訓練
