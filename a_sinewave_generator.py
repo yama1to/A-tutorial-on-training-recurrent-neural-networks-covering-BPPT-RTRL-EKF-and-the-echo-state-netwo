@@ -16,64 +16,57 @@ T
 """
 
 class sinewave_generator:
-	def __init__(self,reservoir_nodes,output_nodes,learning_times,activator = np.tanh):
+	def __init__(self,x_nodes_num,y_nodes_num,learning_times,f = np.tanh):
 
 		#reservoir層の重みを記録　最初はゼロ行列
-		#self.log_reservoir_nodes = np.array([np.zeros(reservoir_nodes)])
-		self.log_reservoir_nodes = np.array([np.random.normal(0,1,reservoir_nodes)])
+		#self.x = np.array([np.zeros(x_nodes_num)])
+		self.x = np.array([np.random.normal(0,1,x_nodes_num)])
 		#重み 
-		self.reservoir_weight = self.standard_init_weight(reservoir_nodes,reservoir_nodes)
-		self.back_weight = self.standard_init_weight(reservoir_nodes,reservoir_nodes)
-			#更新されるのはoutput_weightだけ。
-		self.output_weight = self.standard_init_weight(reservoir_nodes,output_nodes)
+		self.w = self.standard_init_weight(x_nodes_num,x_nodes_num)
+		self.w_back = self.standard_init_weight(x_nodes_num,x_nodes_num)
+		#更新されるのはw_outだけ。
+		self.w_out = self.standard_init_weight(x_nodes_num,y_nodes_num)
 
 		#ノード数
-		self.reservoir_nodes = reservoir_nodes
-		self.output_nodes = output_nodes
+		self.x_nodes_num = x_nodes_num
+		self.y_nodes_num = y_nodes_num
 
 		#活性化関数
-		self.activator = activator
+		self.f = f
 
 	#出力層の重みの更新
-	def update_weight_output(self):
-		M = self.log_reservoir_nodes
-		T = [self.d(n) for n in range(1,len(M)+1)]
-		#print(M)
-		output_weight = np.linalg.pinv(M) @ T
-		self.output_weight = output_weight
+	def update_w_out(self):
+		M = self.x
+		T = np.array([self.d(n) for n in range(1,len(M)+1)])
+		w_out = np.linalg.pinv(M) @ T
+		self.w_out = w_out
 
 	#reservoir層の次状態を取得
-	def next_state_reservoir(self,current_state):
-		next_state = self.reservoir_weight @ self.log_reservoir_nodes[-1]
-		#print(next_state)
-		#print(self.back_weight.shape,np.array([current_state]).shape)
-		next_state += self.back_weight @ current_state
-		#print(self.log_reservoir_nodes[-1],current_state)
-		next_state = self.activator(next_state)
-		return next_state
+	def next_x(self,y):
+		x_next_state = self.f(self.w @ self.x[-1] + self.w_back @ y)
+		return x_next_state
 
 	#訓練
 	def train(self,learning_times):
 		s = 1
+		self.w_out = self.w_out[0]
 		for i in range(learning_times):
 			if i/100>s:
 				print(str(i-1)+"回目")
 				s += 1
-			current_state = np.array(self.log_reservoir_nodes[-1])
-			#current_state = np.array([self.d(i) for _ in range(20)])
-			self.log_reservoir_nodes = np.append(self.log_reservoir_nodes,
-				[self.next_state_reservoir(current_state)],axis = 0)
-			#print(self.log_reservoir_nodes.shape)
-			self.update_weight_output()
+			y = np.array(self.w_out * self.x[-1])
+			self.x = np.append(self.x , [self.next_x(y)],axis = 0)
+			#print(self.x.shape)
+			self.update_w_out()
 
 	#予測
 	def predict(self,learning_times,predict_times):
 		predicted_outputs = [self.d(learning_times)]
-		reservoir = self.log_reservoir_nodes[-1]
+		reservoir = self.x[-1]
 
 		for _ in range(predict_times):
-			reservoir = self.next_state_reservoir(reservoir)
-			predicted_outputs.append(reservoir @ self.output_weight)
+			reservoir = self.next_x(reservoir)
+			predicted_outputs.append(reservoir @ self.w_out)
 		return predicted_outputs
 
 	#誤差計算 mean squared training error
@@ -95,17 +88,18 @@ class sinewave_generator:
 	def standard_init_weight(self,c,v):
 		w = np.random.normal(0,1,c*v).reshape([c,v])
 		return w
+
 	#初期値
 	def zeros_init_weight(self,c,v):
 		return np.zeros([c,v])
 
 	#reservior層の中身を見る。０に収束させたい。
-	def reservior_plot(self,sequence):
+	def x_plot(self,sequence):
 		fig = plt.figure()
 		ax = []
 		for i in range(1,21):
 			ax = fig.add_subplot(4,5,i)
-			y = self.log_reservoir_nodes[:,i-1]
+			y = self.x[:,i-1]
 
 			#print(y.shape)
 			ax.plot(sequence,y[:sequence[-1]])
@@ -113,16 +107,16 @@ class sinewave_generator:
 
 def main():
 
-	reservoir_nodes = 20
-	output_nodes = 1
+	x_nodes_num = 20
+	y_nodes_num = 1
 	learning_times = 300 #default 300
 	predict_times = 50
 
 
 
 	model = sinewave_generator(
-		reservoir_nodes = reservoir_nodes,
-		output_nodes = output_nodes,
+		x_nodes_num = x_nodes_num,
+		y_nodes_num = y_nodes_num,
 		learning_times = learning_times)
 
 	model.train(learning_times)
@@ -140,10 +134,10 @@ def main():
 	plt.show()
 	
 
-	model.reservior_plot(list(range(1,predict_times+1)))
+	model.x_plot(list(range(1,predict_times+1)))
 
-	#print(np.array([np.zeros(reservoir_nodes)]))
-	#print(np.array([np.random.normal(0,1,reservoir_nodes)]))
+	#print(np.array([np.zeros(x_nodes_num)]))
+	#print(np.array([np.random.normal(0,1,x_nodes_num)]))
 
 main()
 
