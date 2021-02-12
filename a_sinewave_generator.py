@@ -40,39 +40,49 @@ class sinewave_generator:
 
 	#出力層の重みの更新
 	def update_w_out(self):
-		M = self.x
-		T = np.array([[self.d(n)] for n in range(1,len(M)+1)])
-		#print(M,T)
+		M = self.x[101:]
+		#print(M.shape)
+		T = np.array([[self.d(n)] for n in range(101,len(self.x))])
 		w_out = np.linalg.pinv(M) @ T
-		#print(w_out,self.w_out)
-		self.w_out = w_out
+		self.w_out = w_out 
 
 	#reservoir層の次状態を取得
 	def next_x(self,y):
-		x_next_state = self.f(self.w @ self.x[-1] + self.w_back.T @ y)
-		return x_next_state 
+		"""
+		a = self.w @ np.array([self.x[-1]]).T
+		b = self.w_back.T @ y
+		x_next_state = self.f(a+b).T
+		"""
+
+		x_next_state = self.f(self.w_back.T @ y).T
+
+		return x_next_state #(1,20)
 
 	#訓練
 	def train(self,learning_times):
-		s = 1
-		
 		for i in range(learning_times):
 			if (i+1) % 100 == 0:
 				print(str(i+1)+"回目")
-			y = np.sum(self.w_out @ np.array([self.x[-1]]))
+			#y = np.sum(self.w_out @ np.array([self.x[-1]]))
+			y = self.d(i)
+			#print(y)
 			y = np.array([[y]])
+			#print(self.x.shape)
 			self.x = np.append(self.x,self.next_x(y),axis = 0)
-			if i>=100:
-				self.update_w_out()
+			#print(self.x.shape,self.next_x(y).shape)
+			#print(i)
+
+		self.update_w_out()
 
 	#予測
 	def predict(self,learning_times,predict_times):
-		predicted_outputs = np.array(self.d(learning_times))
+		predicted_outputs = np.array(self.d(learning_times)) #最後の教師
 		
 		#print(x)
 		for _ in range(predict_times):
-			#print(self.w_out.shape,array([self.x[-1].shape)
-			y = np.sum(self.w_out @ np.array([self.x[-1]]))
+			a = self.w_out.T * np.array([self.x[-1]])
+			#print(a.shape,self.w_out.shape,np.array([self.x[-1]]).shape)
+			y = np.sum(a)
 			y = np.array([[y]])
 			self.x = np.append(self.x,self.next_x(y),axis = 0)
 			predicted_outputs = np.append(predicted_outputs,y)
@@ -104,11 +114,19 @@ class sinewave_generator:
 	#reservior層の中身を見る。０に収束させたい。
 	def x_plot(self,sequence):
 		fig = plt.figure()
+
+		#xの中身
 		for i in range(1,21):
-			ax = fig.add_subplot(4,5,i)
+			ax = fig.add_subplot(5,5,i) #縦横5x5個グラフをつくる。それのi番目
 			y = self.x[:,i-1]
-			ax.plot(sequence,y[:sequence[-1]])
+			ax.plot(sequence,y[sequence[0]:sequence[-1]+1])
+
+		#教師信号
+		ax = fig.add_subplot(5,5,21)
+		y = list(self.d(n) for n in sequence)
+		ax.plot(sequence,y)
 		plt.show()
+		#print(self.x.shape)
 
 def main():
 
@@ -138,8 +156,10 @@ def main():
 	plt.plot(x_test,predict)
 	plt.show()
 	
-
-	model.x_plot(list(range(1,predict_times+1)))
+	r = list(range(101,151))
+	#print(r)
+	#r = list(range(301,351))
+	model.x_plot(r)
 
 	#print(np.array([np.zeros(x_nodes_num)]))
 	#print(np.array([np.random.normal(0,1,x_nodes_num)]))
