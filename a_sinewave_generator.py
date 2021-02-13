@@ -91,10 +91,12 @@ class sinewave_generator:
 	#誤差計算 mean squared training error
 	def MSE(self,start,end,predicted_outputs):
 		mse = 0
-		for n in range(start+1,end):
-			diff = self.d(n) - predicted_outputs[n-start-1]
+		for n in range(start,end+1):
+			diff = self.d(n-1) - predicted_outputs[n-start]
+			#print(diff)
 			#print(diff)
 			mse += (diff)**2
+			#print(n-start)
 		mse = mse/200
 		print("教師と予測の平均２乗誤差は ["+str(mse)+"]")#目標は 1.2e-13の誤差
 
@@ -150,7 +152,7 @@ def main():
 	x_train = range(1,learning_times)
 	y_train = list(model.d(n) for n in range(1,learning_times))
 	
-	model.MSE(x_test[0],x_test[-1],predict)
+	model.MSE(learning_times,learning_times+predict_times,predict)
 	
 	plt.plot(x_train,y_train)
 	plt.plot(x_test,predict)
