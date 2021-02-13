@@ -48,15 +48,15 @@ class sinewave_generator:
 
 	#reservoir層の次状態を取得
 	def next_x(self,y):
-		"""
+		
 		a = self.w @ np.array([self.x[-1]]).T
 		b = self.w_back.T @ y
 		x_next_state = self.f(a+b).T
-		"""
+		
 
-		x_next_state = self.f(self.w_back.T @ y).T
+		#x_next_state = self.f(self.w_back.T @ y).T
 
-		return x_next_state #(1,20)
+		return x_next_state * 0.25 #(1,20)
 
 	#訓練
 	def train(self,learning_times):
@@ -76,7 +76,7 @@ class sinewave_generator:
 
 	#予測
 	def predict(self,learning_times,predict_times):
-		predicted_outputs = np.array(self.d(learning_times)) #最後の教師
+		predicted_outputs = np.array(self.d(learning_times-1)) #最後の教師
 		
 		#print(x)
 		for _ in range(predict_times):
