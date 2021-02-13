@@ -19,13 +19,13 @@ class sinewave_generator:
 
 		#reservoir層の重みを記録
 		#self.x = np.array([np.zeros(x_nodes_num)])
-		self.x = self.standard_init_weight(y_nodes_num,x_nodes_num)
+		self.x = self.standard_init_weight(y_nodes_num,x_nodes_num).astype('float64')
 		
 		#重み 
-		self.w = self.standard_init_weight(x_nodes_num,x_nodes_num)
-		self.w_back = self.standard_init_weight(y_nodes_num,x_nodes_num)
+		self.w = self.standard_init_weight(x_nodes_num,x_nodes_num).astype('float64')
+		self.w_back = self.standard_init_weight(y_nodes_num,x_nodes_num).astype('float64')
 		#更新されるのはw_outだけ。
-		self.w_out = self.standard_init_weight(x_nodes_num,y_nodes_num)
+		self.w_out = self.standard_init_weight(x_nodes_num,y_nodes_num).astype('float64')
 
 
 
@@ -40,18 +40,18 @@ class sinewave_generator:
 
 	#出力層の重みの更新
 	def update_w_out(self):
-		M = self.x[101:]
+		M = self.x[101:].astype('float64')
 		#print(M.shape)
-		T = np.array([[self.d(n)] for n in range(101,len(self.x))])
+		T = np.array([[self.d(n)] for n in range(101,len(self.x))]).astype('float64')
 		w_out = np.linalg.pinv(M) @ T
-		self.w_out = w_out 
+		self.w_out = w_out.astype('float64')
 
 	#reservoir層の次状態を取得
 	def next_x(self,y):
 		
 		a = self.w @ np.array([self.x[-1]]).T
 		b = self.w_back.T @ y
-		x_next_state = self.f(a+b).T
+		x_next_state = self.f(a+b).T.astype('float64')
 		
 
 		#x_next_state = self.f(self.w_back.T @ y).T
@@ -66,7 +66,7 @@ class sinewave_generator:
 			#y = np.sum(self.w_out @ np.array([self.x[-1]]))
 			y = self.d(i)
 			#print(y)
-			y = np.array([[y]])
+			y = np.array([[y]]).astype('float64')
 			#print(self.x.shape)
 			self.x = np.append(self.x,self.next_x(y),axis = 0)
 			#print(self.x.shape,self.next_x(y).shape)
@@ -92,13 +92,13 @@ class sinewave_generator:
 	def MSE(self,start,end,predicted_outputs):
 		mse = 0
 		for n in range(start,end+1):
-			diff = self.d(n-1) - predicted_outputs[n-start]
+			diff = self.d(n-1) - predicted_outputs[n-start].astype('float64')
 			#print(diff)
 			#print(diff)
 			mse += (diff)**2
 			#print(n-start)
 		mse = mse/200
-		print("教師と予測の平均２乗誤差は ["+str(mse)+"]")#目標は 1.2e-13の誤差
+		print("教師と予測の平均２乗誤差は ["+str(mse)+"]")#目標は 5.6e-12の誤差
 
 	#教師信号
 	def d(self,n):
@@ -106,7 +106,7 @@ class sinewave_generator:
 
 	#初期値
 	def standard_init_weight(self,c,v):
-		w = np.random.normal(0,1,c*v).reshape([c,v])
+		w = np.random.normal(0,1,c*v).astype('float64').reshape([c,v])
 		return w
 
 	#初期値
@@ -146,12 +146,14 @@ def main():
 
 	model.train(learning_times)
 
-	predict = model.predict(learning_times,predict_times)
+	
 	#print(predict)
 	x_test = list(range(learning_times,learning_times+predict_times+1))
 	x_train = range(1,learning_times)
 	y_train = list(model.d(n) for n in range(1,learning_times))
-	
+
+
+	predict = model.predict(learning_times,predict_times)
 	model.MSE(learning_times,learning_times+predict_times,predict)
 	
 	plt.plot(x_train,y_train)
@@ -160,7 +162,6 @@ def main():
 	
 	r = list(range(101,151))
 	#print(r)
-	#r = list(range(301,351))
 	model.x_plot(r)
 
 	#print(np.array([np.zeros(x_nodes_num)]))
